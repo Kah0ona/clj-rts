@@ -2,7 +2,8 @@
   (:require [play-clj.core :refer :all]
             [play-clj.g2d :refer :all]
             [play-clj.ui :refer :all]
-            [rts.overlay :as o]))
+            [rts.overlay :as o]
+            [rts.entities :as e]))
 
 (declare rts main-screen overlay-screen)
 
@@ -15,18 +16,27 @@
   (fn [screen entities]
     (update! screen :renderer (stage))
     (println "showing main-screen")
-    [(texture "bg.jpg")]
+    [(texture "bg.jpg")
+     (e/create-tank "tank1" 50 100)
+     (e/create-tank "tank2" 100 100)
+     (e/create-tank "tank3" 150 100)
+     (e/create-tank "tank4" 250 100)
+     ]
       )
   
   :on-render
   (fn [screen entities]
     (clear!)
-    (render! screen entities)))
+    (render! screen entities))
 
-
-
-
-
+  :on-selection-made
+  (fn [screen entities]
+;    (println "on-selection-made" (:selector screen))
+    (let [tanks (filter :tank? entities)
+          selector (:selector screen)]
+      (map e/highlight-unit (e/get-units-under-selection selector tanks)))
+    entities))
+      
 ;;;;;;;;;;;
 ;;; Overlay screen, rendering the selector rectangle and the FPS etc.
 ;;;;;;;;;;;
@@ -36,7 +46,8 @@
     (update! screen :camera (orthographic) :renderer (stage))
     (assoc (label "0" (color :white))
            :id :fps
-           :x 5))
+           :x 5)
+    )
 
   :on-key-down
   (fn [screen entities]
@@ -44,14 +55,12 @@
   
   :on-touch-down
   (fn [screen entities]
-    (println "touch")
     ;create a selector window, and add it to the entities map on the given position
     (let [pos (input->screen screen (:input-x screen) (:input-y screen))]
     (conj entities (o/create-selector (:x pos) (:y pos)))))
 
   :on-touch-dragged 
   (fn [screen entities]
-    (println "drag")
     (let [pos (input->screen screen (:input-x screen) (:input-y screen))]
     (->> (for [entity entities]
            (case (:id entity)
@@ -60,11 +69,10 @@
 
   :on-touch-up
   (fn [screen entities]
-    (println "up")
-    (->> (for [entity entities]
-           (case (:id entity)
-             :selector (remove entity entities)
-             entity))))
+    ;highlight all units under selection
+    (let [selector (filter :selector? entities)]
+        (run! main-screen :on-selection-made :selector selector)
+        (remove :selector? entities)))
 
   :on-render
   (fn [screen entities]
@@ -77,8 +85,6 @@
   :on-resize
   (fn [screen entities]
     (height! screen 600)))
-
-
 
 ; if runtime errors are caught, this screen shows up. Any keypress will then restart the game.
 (defscreen blank-screen

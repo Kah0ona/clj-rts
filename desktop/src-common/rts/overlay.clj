@@ -6,9 +6,10 @@
 (defn create-selector [x y]
   "Creates a selection rectangle on pos x and y"
   (println (str "Creating rect at: (" x "," y ")" ))
-  (assoc (shape :filled 
+  (assoc (shape :line
          :set-color (color :red)
          :rect x y 0 0)
+         :selector? true
          :id :selector
          :origin-x x
          :origin-y y))
@@ -31,8 +32,6 @@
         new-origin-x (min new-x old-x)
         new-origin-y (min new-y old-y)
     ]
-  (println (str "old-x" old-x))
-  (println (str "old-y" old-y))
   (shape selector :rect new-origin-x new-origin-y width height)
   ))
 
